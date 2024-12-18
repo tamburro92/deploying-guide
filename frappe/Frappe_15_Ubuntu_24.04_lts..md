@@ -172,6 +172,12 @@ or
 
 
 ## Extra
+
+### Adjust Fail2Ban
+	sudo nano /etc/fail2ban/jail.d/nginx-proxy.conf 
+Edit lines, ex:
+	maxretry = 30
+
 ### Create swapfile
 	sudo fallocate -l 2G /swapfile
 	ls -lh /swapfile
