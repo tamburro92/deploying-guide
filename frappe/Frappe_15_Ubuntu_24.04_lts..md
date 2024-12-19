@@ -145,13 +145,13 @@ https://discuss.frappe.io/t/print-pdf-header-footer-not-showing-letterhead/85030
 	bench config dns_multitenant on
 
 Use lets-encrypt and add a voice to crontab
-
+	sudo apt install certbot python3-certbot-nginx
 	sudo bench setup lets-encrypt [site-name] --custom-domain [domain-name]
+	
 	#or wildcard
-	sudo bench setup wildcard-ssl erpnext.xyz --email test@example.com
+	#sudo bench setup wildcard-ssl erpnext.xyz --email test@example.com
 
 	#sudo bench renew-lets-encrypt
-	#sudo apt install certbot python3-certbot-nginx
 
 ### Setup production
     
