@@ -162,6 +162,15 @@ Use lets-encrypt and add a voice to crontab
 
 	#bench disable-production
 
+### FIX Node Path in Supervisor ###
+	which node
+
+	sudo nano /etc/supervisor/conf.d/frappe-15.conf
+		[program:frappe-15-node-socketio]
+		#command=/usr/bin/node /home/ubuntu/frappe-15/apps/frappe/socketio.js
+		command=/home/ubuntu/.nvm/versions/node/v18.20.5/bin/node /home/ubuntu/frappe-15/apps/frappe/socketio.js
+
+
 ### if js and css file is not loading on login window run the following command
 	sudo usermod -aG [user] www-data
 
