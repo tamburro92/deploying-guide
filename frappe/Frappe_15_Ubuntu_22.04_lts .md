@@ -128,6 +128,7 @@ https://discuss.frappe.io/t/print-pdf-header-footer-not-showing-letterhead/85030
 
 	bench new-site [site]
 	bench setup add-domain --site [site-name]  [domain-name]
+	bench --site [site] set-config host_name [domain-name]
 	bench use [site]
 
 ### Download Apps from repo

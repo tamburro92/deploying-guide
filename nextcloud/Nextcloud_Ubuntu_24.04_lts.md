@@ -1,13 +1,16 @@
+# NextCloud Installation on Ubuntu 24.04 LTS
 
-https://docs.nextcloud.com/server/latest/admin_manual/installation/example_ubuntu.html
+## References
+- [Official Ubuntu Guide](https://docs.nextcloud.com/server/latest/admin_manual/installation/example_ubuntu.html)
+- [Apache Configuration](https://docs.nextcloud.com/server/latest/admin_manual/installation/source_installation.html#apache-configuration-label)
 
+## Install Dependencies
 
-## Install dependecy
     sudo apt update && sudo apt upgrade
     sudo apt install apache2 mariadb-server libapache2-mod-php php-gd php-mysql \
     php-curl php-mbstring php-intl php-gmp php-bcmath php-xml php-imagick php-zip
 
-## Configure DB
+### Configure DB
     sudo mysql_secure_installation
 
 		In order to log into MariaDB to secure it, we'll need the current
@@ -60,20 +63,9 @@ You can quit the prompt by entering:
     quit;
 
 ## Install Nextcloud
-Now download the archive of the latest Nextcloud version:
-
-Go to the Nextcloud Install Page.
-https://nextcloud.com/install/
-
-Go to Download Server > Community Projects and download either the tar.bz2 or .zip archive.
-
     wget https://download.nextcloud.com/server/releases/latest.zip
-Now you can extract the archive contents. Run the appropriate unpacking command for your archive type:
-
-    tar -xjvf nextcloud-x.y.z.tar.bz2
-    unzip nextcloud-x.y.z.zip
-
-This unpacks to a single nextcloud directory.
+    
+    unzip latest.zip
 
 Copy the Nextcloud directory to its final destination. When you are running the Apache HTTP server you may safely install Nextcloud in your Apache document root:
 
@@ -83,27 +75,13 @@ Finally, change the ownership of your Nextcloud directories to your HTTP user:
 
     sudo chown -R www-data:www-data /var/www/nextcloud
 
+## Configure Apache Web server
 
-## Apache Web server configuration
-Configuring Apache requires the creation of a single configuration file. On Debian, Ubuntu, and their derivatives, this file will be /etc/apache2/sites-available/nextcloud.conf
+Create apache config
 
-You can choose to install Nextcloud in a directory on an existing webserver, for example https://www.example.com/nextcloud/, or in a virtual host if you want Nextcloud to be accessible from its own subdomain such as https://cloud.example.com/.
+    sudo nano /etc/apache2/sites-available/nextcloud.conf
 
-To use the directory-based installation, put the following in your nextcloud.conf replacing the Directory and Alias filepaths with the filepaths appropriate for your system:
-
-    Alias /nextcloud "/var/www/nextcloud/"
-
-    <Directory /var/www/nextcloud/>
-        Require all granted
-        AllowOverride All
-        Options FollowSymLinks MultiViews
-
-        <IfModule mod_dav.c>
-            Dav off
-        </IfModule>
-    </Directory>
-
-To use the virtual host installation, put the following in your nextcloud.conf replacing ServerName, as well as the DocumentRoot and Directory filepaths with values appropriate for your system:
+Add
 
     <VirtualHost *:80>
     DocumentRoot /var/www/nextcloud/
@@ -119,35 +97,79 @@ To use the virtual host installation, put the following in your nextcloud.conf r
         </IfModule>
     </Directory>
     </VirtualHost>
-On Debian, Ubuntu, and their derivatives, you should run the following command to enable the configuration:
 
-    a2ensite nextcloud.conf
+Run the following command to enable the configuration:
+
+    sudo a2ensite nextcloud.conf
 
 ### Additional Apache configurations
 For Nextcloud to work correctly, we need the module mod_rewrite. Enable it by running:
-
-    a2enmod rewrite
-
 Additional recommended modules are mod_headers, mod_env, mod_dir and mod_mime:
 
+    a2enmod rewrite
     a2enmod headers
     a2enmod env
     a2enmod dir
     a2enmod mime
 
-If you’re running mod_fcgi instead of the standard mod_php also enable:
-
-    a2enmod setenvif
-
-You must disable any server-configured authentication for Nextcloud, as it uses Basic authentication internally for DAV services. If you have turned on authentication on a parent folder (via e.g. an AuthType Basic directive), you can turn off the authentication specifically for the Nextcloud entry. Following the above example configuration file, add the following line in the <Directory> section:
-
-    Satisfy Any
-
-When using SSL, take special note of the ServerName. You should specify one in the server configuration, as well as in the CommonName field of the certificate. If you want your Nextcloud to be reachable via the internet, then set both of these to the domain you want to reach your Nextcloud server.
-
 Now restart Apache:
 
     service apache2 restart
 
-If you’re running Nextcloud in a subdirectory and want to use CalDAV or CardDAV clients make sure you have configured the correct Service discovery URLs.
+### Enable SSL
+    sudo apt install certbot python3-certbot-apache
+    sudo certbot --apache
+Check autorenew is active:
+    sudo systemctl status certbot.timer
+
+
+## Configure PHP
+Configure memory 512mb
+
+    sudo nano /etc/php/8.3/apache2/php.ini
+    replace memory_limit = 128M to memory_limit = 512M
+
+
+## Configure Nextcloud
+
+Use the occ command to complete your installation. This takes the place of running the graphical Installation Wizard:
+
+    cd /var/www/nextcloud/
+    sudo -u www-data php occ  maintenance:install \
+    --database='mysql' --database-name='nextcloud' \
+    --database-user='root' --database-pass='password' \
+    --admin-user='admin' --admin-pass='password'
+
+Edit config.php:
+
+    sudo nano /var/www/nextcloud/config/config.php 
+Add
+
+    'skeletondirectory' => '',
+    'trusted_domains' => domain_name,
+    'simpleSignUpLink.shown' => false,
+
+### Configure users
+
+    sudo -u www-data php occ group:add guest
+    sudo -u www-data php occ user:add --display-name="Guest" --group="guest" Guest
+
+### Install Apps
+#### Install groupfolders
+    sudo -u www-data php occ app:install groupfolders
+    sudo -u www-data php occ groupfolders:create /
+
+Configure permissions
+
+    sudo -u www-data php occ groupfolders:group 1 admin write share delete
+    sudo -u www-data php occ groupfolders:group 1 guest
+
+### Disable app
+    sudo -u www-data php occ app:disable federation sharebymail nextcloud_announcements webhook_listeners
+    sudo -u www-data php occ app:disable photos dashboard activity firstrunwizard app_api weather_status
+
+
+
+
+
 
